@@ -14,7 +14,7 @@ class CacheClientRepository extends ClientRepository
     /**
      * @var string
      */
-    protected $cacheKey;
+    protected $cacheKeyPrefix;
 
     /**
      * @var int
@@ -55,7 +55,7 @@ class CacheClientRepository extends ClientRepository
         ?string $store = null
     ) {
         parent::__construct($personalAccessClientId, $personalAccessClientSecret);
-        $this->cacheKey = $cacheKey ?? 'passport_client_';
+        $this->cacheKeyPrefix = sprintf('%s_client_', $cacheKey ?? 'passport');
         $this->expiresInSeconds = $expiresInSeconds ?? 5 * 60;
         $this->cacheTags = \array_merge($tags, [$this->cacheTag]);
         $this->cacheStore = $store ?? \config('cache.default');
@@ -182,6 +182,6 @@ class CacheClientRepository extends ClientRepository
 
     public function itemKey(string $key)
     {
-        return $this->cacheKey . $key;
+        return $this->cacheKeyPrefix . $key;
     }
 }
