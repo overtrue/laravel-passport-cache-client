@@ -32,7 +32,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "\\Overtrue\\LaravelPackage\\PackageServiceProvider"
+                "\\Overtrue\\LaravelPassportCacheClient\\CacheClientServiceProvider"
             ]
         },
         "hooks": {
