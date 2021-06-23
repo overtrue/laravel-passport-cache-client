@@ -2,9 +2,9 @@
 
 namespace Tests;
 
-use Illuminate\Database\Eloquent\Model;
+use Laravel\Passport\HasApiTokens;
 
-class User extends Model
+class User extends \Illuminate\Foundation\Auth\User
 {
-    protected $fillable = ['name'];
+    use HasApiTokens;
 }
