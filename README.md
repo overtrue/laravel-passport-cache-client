@@ -1,6 +1,6 @@
-<h1 align="center">Laravel Passport Cache Client</h1>
+Laravel Passport Cache Client
 
-<p align="center"> Make [laravel/passport](https://github.com/laravel/passport) client cacheable..</p>
+Make [laravel/passport](https://github.com/laravel/passport) client cacheable.
 
 
 ## Installing
