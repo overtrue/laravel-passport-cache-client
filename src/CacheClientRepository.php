@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
-use Laravel\Passport\Token;
 use Illuminate\Support\Facades\Cache;
 
 class CacheClientRepository extends ClientRepository
@@ -54,8 +53,13 @@ class CacheClientRepository extends ClientRepository
         array $tags = [],
         ?string $store = null
     ) {
-        if (is_callable('parent::__construct')) {
+        if (property_exists($this, 'personalAccessClientId')) {
+            // 10.x
             parent::__construct($personalAccessClientId, $personalAccessClientSecret);
+        } else {
+            // 9.x
+            Passport::personalAccessClientId($personalAccessClientId);
+            Passport::personalAccessClientSecret($personalAccessClientSecret);
         }
 
         $this->cacheKeyPrefix = sprintf('%s_client_', $cacheKey ?? 'passport');
