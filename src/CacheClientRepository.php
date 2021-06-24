@@ -36,6 +36,20 @@ class CacheClientRepository extends ClientRepository
     protected $cacheTag = 'laravel-passport-cache-client';
 
     /**
+     * The personal access client ID.
+     *
+     * @var int|string|null
+     */
+    protected $personalAccessClientId;
+
+    /**
+     * The personal access client secret.
+     *
+     * @var string|null
+     */
+    protected $personalAccessClientSecret;
+
+    /**
      * CacheClientRepository constructor.
      *
      * @param null        $personalAccessClientId
@@ -53,13 +67,13 @@ class CacheClientRepository extends ClientRepository
         array $tags = [],
         ?string $store = null
     ) {
-        if (property_exists($this, 'personalAccessClientId')) {
+        if (is_callable('parent::__construct')) {
             // 10.x
             parent::__construct($personalAccessClientId, $personalAccessClientSecret);
         } else {
             // 9.x
-            Passport::personalAccessClientId($personalAccessClientId);
-            Passport::personalAccessClientSecret($personalAccessClientSecret);
+            $this->personalAccessClientId = $personalAccessClientId;
+            $this->personalAccessClientSecret = $personalAccessClientSecret;
         }
 
         $this->cacheKeyPrefix = sprintf('%s_client_', $cacheKey ?? 'passport');
