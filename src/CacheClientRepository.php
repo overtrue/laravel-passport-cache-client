@@ -177,7 +177,7 @@ class CacheClientRepository extends ClientRepository
             $keys[] = $this->itemKey($this->personalAccessClientId);
         }
 
-        Cache::tags($this->cacheTags)->deleteMultiple($keys);
+        Cache::store($this->cacheStore)->tags($this->cacheTags)->deleteMultiple($keys);
     }
 
     public function itemKey(string $key)
