@@ -54,7 +54,10 @@ class CacheClientRepository extends ClientRepository
         array $tags = [],
         ?string $store = null
     ) {
-        parent::__construct($personalAccessClientId, $personalAccessClientSecret);
+        if (is_callable('parent::__construct')) {
+            parent::__construct($personalAccessClientId, $personalAccessClientSecret);
+        }
+
         $this->cacheKeyPrefix = sprintf('%s_client_', $cacheKey ?? 'passport');
         $this->expiresInSeconds = $expiresInSeconds ?? 5 * 60;
         $this->cacheTags = \array_merge($tags, [$this->cacheTag]);
