@@ -2,6 +2,9 @@
 
 namespace Overtrue\LaravelPassportCacheClient;
 
+use Illuminate\Cache\TaggableStore;
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
@@ -77,7 +80,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function find($id)
     {
-        return Cache::store($this->cacheStore)->tags($this->cacheTags)->remember(
+        return $this->store()->remember(
             $this->itemKey($id),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($id) {
@@ -98,7 +101,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function findForUser($clientId, $userId)
     {
-        return Cache::store($this->cacheStore)->tags($this->cacheTags)->remember(
+        return $this->store()->remember(
             $this->itemKey($clientId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($clientId, $userId) {
@@ -118,7 +121,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function forUser($userId): Collection
     {
-        return Cache::store($this->cacheStore)->tags($this->cacheTags)->remember(
+        return $this->store()->remember(
             $this->itemKey($userId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($userId) {
@@ -148,7 +151,7 @@ class CacheClientRepository extends ClientRepository
             throw new \RuntimeException('Personal access client not found. Please create one.');
         }
 
-        return Cache::store($this->cacheStore)->tags($this->cacheTags)->remember(
+        return $this->store()->remember(
             $this->itemKey($this->personalAccessClientId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($client) {
@@ -184,11 +187,18 @@ class CacheClientRepository extends ClientRepository
             $keys[] = $this->itemKey($this->personalAccessClientId);
         }
 
-        Cache::store($this->cacheStore)->tags($this->cacheTags)->deleteMultiple($keys);
+        $this->store()->deleteMultiple($keys);
     }
 
     public function itemKey(string $key)
     {
         return $this->cacheKeyPrefix . $key;
+    }
+
+    public function store(): Repository
+    {
+        $store = Cache::store($this->cacheStore);
+
+        return $store instanceof TaggableStore ? $store->tags($this->cacheTags) : $store;
     }
 }
