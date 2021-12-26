@@ -4,7 +4,6 @@ namespace Overtrue\LaravelPassportCacheClient;
 
 use Illuminate\Cache\TaggableStore;
 use Illuminate\Contracts\Cache\Repository;
-use Illuminate\Contracts\Cache\Store;
 use Illuminate\Database\Eloquent\Collection;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
