@@ -95,7 +95,7 @@ class CacheClientRepository extends ClientRepository
     public function find($id)
     {
         return $this->store()->remember(
-            $this->itemKey($id),
+            $this->cacheKeyForClient($id),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($id) {
                 $client = Passport::client();
@@ -116,12 +116,12 @@ class CacheClientRepository extends ClientRepository
     public function findForUser($clientId, $userId)
     {
         return $this->store()->remember(
-            $this->itemKey($clientId),
+            $this->cacheKeyForUserClient($userId, $clientId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($clientId, $userId) {
                 $client = Passport::client();
 
-                return Passport::token()->where($client->getKeyName(), $clientId)->where('user_id', $userId)->first();
+                return $client->where($client->getKeyName(), $clientId)->where('user_id', $userId)->first();
             }
         );
     }
@@ -136,7 +136,7 @@ class CacheClientRepository extends ClientRepository
     public function forUser($userId): Collection
     {
         return $this->store()->remember(
-            $this->itemKey($userId),
+            $this->cacheKeyForUser($userId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($userId) {
                 return Passport::client()
@@ -165,13 +165,7 @@ class CacheClientRepository extends ClientRepository
             throw new \RuntimeException('Personal access client not found. Please create one.');
         }
 
-        return $this->store()->remember(
-            $this->itemKey($this->personalAccessClientId),
-            \now()->addSeconds($this->expiresInSeconds),
-            function () use ($client) {
-                return $client->orderBy($client->getKeyName(), 'desc')->first()->client;
-            }
-        );
+        return $client->orderBy($client->getKeyName(), 'desc')->first()->client;
     }
 
     public function update(Client $client, $name, $redirect)
@@ -193,20 +187,31 @@ class CacheClientRepository extends ClientRepository
     protected function removeClientCache(Client $client)
     {
         $keys = [
-            $this->itemKey($client->getKeyName()),
-            $this->itemKey($client->user_id),
+            $this->cacheKeyForClient($client->getKey()),
+            $this->cacheKeyForUser($client->user_id),
+            $this->cacheKeyForUserClient($client->user_id, $client->getKey()),
         ];
 
         if ($this->personalAccessClientId) {
-            $keys[] = $this->itemKey($this->personalAccessClientId);
+            $keys[] = $this->cacheKeyForClient($this->personalAccessClientId);
         }
 
         $this->store()->deleteMultiple($keys);
     }
 
-    public function itemKey(string $key)
+    public function cacheKeyForUser($userId): string
     {
-        return $this->cacheKeyPrefix . $key;
+        return $this->cacheKeyPrefix .':for_user:'. $userId;
+    }
+
+    public function cacheKeyForClient(string $clientId): string
+    {
+        return $this->cacheKeyPrefix .':for_client:'. $clientId;
+    }
+
+    public function cacheKeyForUserClient($userId, string $clientId): string
+    {
+        return $this->cacheKeyPrefix .':for_user_client:'. $userId . '_' . $clientId;
     }
 
     public function store(): Repository

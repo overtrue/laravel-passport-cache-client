@@ -3,6 +3,7 @@
 namespace Tests;
 
 use Illuminate\Contracts\Hashing\Hasher;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
@@ -51,21 +52,118 @@ class FeatureTest extends TestCase
         $user->email = 'foo@gmail.com';
         $user->password = $this->app->make(Hasher::class)->make($password);
         $user->save();
+        $repository = app(ClientRepository::class);
 
         /** @var Client $client */
-        $client = app(ClientRepository::class)->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
+        $client = $repository->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
 
-        $query = $this->getQueryLog(function () use ($client) {
-            app(ClientRepository::class)->find($client->id);
-            app(ClientRepository::class)->find($client->id);
-            app(ClientRepository::class)->find($client->id);
-            app(ClientRepository::class)->find($client->id);
-            app(ClientRepository::class)->find($client->id);
+        $query = $this->getQueryLog(function () use ($repository, $client) {
+            $repository->find($client->id);
+            $repository->find($client->id);
+            $repository->find($client->id);
+            $repository->find($client->id);
+            $repository->find($client->id);
         });
+
+        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
 
         $this->assertSame('select * from "oauth_clients" where "id" = ? limit 1', $query[0]['sql']);
         $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
         $this->assertCount(1, $query);
+    }
+
+    public function test_it_can_cache_client_for_user()
+    {
+        $password = 'foobar123';
+        $user = new User();
+        $user->email = 'foo@gmail.com';
+        $user->password = $this->app->make(Hasher::class)->make($password);
+        $user->save();
+        $repository = app(ClientRepository::class);
+
+        /** @var Client $client */
+        $client = $repository->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
+
+        $query = $this->getQueryLog(function () use ($repository, $user, $client) {
+            $repository->findForUser($user->id, $client->id);
+        });
+
+        $this->assertTrue(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+
+        $this->assertSame('select * from "oauth_clients" where "id" = ? and "user_id" = ? limit 1', $query[0]['sql']);
+        $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
+        $this->assertCount(1, $query);
+
+        $query = $this->getQueryLog(function () use ($repository, $user, $client) {
+            $repository->findForUser($user->id, $client->id);
+            $repository->findForUser($user->id, $client->id);
+            $repository->findForUser($user->id, $client->id);
+            $repository->findForUser($user->id, $client->id);
+            $repository->findForUser($user->id, $client->id);
+        });
+
+        $this->assertEmpty($query);
+    }
+
+    public function test_it_will_remove_cache_on_client_updated()
+    {
+        $password = 'foobar123';
+        $user = new User();
+        $user->email = 'foo@gmail.com';
+        $user->password = $this->app->make(Hasher::class)->make($password);
+        $user->save();
+        $repository = app(ClientRepository::class);
+
+        /** @var Client $client */
+        $client = $repository->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
+        $client2 = $repository->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
+
+        $repository->find($client->id);
+        $repository->findForUser($user->id, $client->id);
+        app(ClientRepository::class, [$client2->id, $client2->secret])->find($client2->id);
+
+        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
+        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client2->id)));
+        $this->assertTrue(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+
+        // update client1
+        $repository->update($client, 'Personal Token Client 2', 'http://localhost');
+        $this->assertFalse(Cache::has($repository->cacheKeyForClient($client->id)));
+        $this->assertFalse(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+
+        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client2->id)));
+    }
+
+    public function test_it_can_cache_personal_client()
+    {
+        $password = 'foobar123';
+        $user = new User();
+        $user->email = 'foo@gmail.com';
+        $user->password = $this->app->make(Hasher::class)->make($password);
+        $user->save();
+
+
+        /** @var Client $client */
+        $client = app(ClientRepository::class)->createPersonalAccessClient($user->id, 'Personal Token Client', 'http://localhost');
+
+        $repository = new CacheClientRepository($client->id, $client->secret);
+
+        $query = $this->getQueryLog(function () use ($repository) {
+            $repository->personalAccessClient();
+            $repository->personalAccessClient();
+            $repository->personalAccessClient();
+            $repository->personalAccessClient();
+            $repository->personalAccessClient();
+        });
+        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
+
+        $this->assertSame('select * from "oauth_clients" where "id" = ? limit 1', $query[0]['sql']);
+        $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
+        $this->assertCount(1, $query);
+
+        // on updated
+        $repository->update($client, 'Personal Token Client 2', 'http://localhost');
+        $this->assertFalse(Cache::has($repository->cacheKeyForClient($client->id)));
     }
 
     protected function getQueryLog(\Closure $callback): \Illuminate\Support\Collection

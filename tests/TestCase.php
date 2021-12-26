@@ -61,6 +61,8 @@ abstract class TestCase extends \Orchestra\Testbench\TestCase
 
         $app['config']->set('database.default', 'testbench');
 
+        $app['config']->set('cache.default', 'array');
+
         $app['config']->set('passport.storage.database.connection', 'testbench');
 
         $app['config']->set('database.connections.testbench', [
