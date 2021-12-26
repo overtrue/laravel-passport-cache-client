@@ -65,7 +65,7 @@ class FeatureTest extends TestCase
             $repository->find($client->id);
         });
 
-        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForClient($client->id)));
 
         $this->assertSame('select * from "oauth_clients" where "id" = ? limit 1', $query[0]['sql']);
         $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
@@ -88,7 +88,7 @@ class FeatureTest extends TestCase
             $repository->findForUser($user->id, $client->id);
         });
 
-        $this->assertTrue(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForUserClient($user->id, $client->id)));
 
         $this->assertSame('select * from "oauth_clients" where "id" = ? and "user_id" = ? limit 1', $query[0]['sql']);
         $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
@@ -122,16 +122,16 @@ class FeatureTest extends TestCase
         $repository->findForUser($user->id, $client->id);
         app(ClientRepository::class, [$client2->id, $client2->secret])->find($client2->id);
 
-        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
-        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client2->id)));
-        $this->assertTrue(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForClient($client->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForClient($client2->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForUserClient($user->id, $client->id)));
 
         // update client1
         $repository->update($client, 'Personal Token Client 2', 'http://localhost');
-        $this->assertFalse(Cache::has($repository->cacheKeyForClient($client->id)));
-        $this->assertFalse(Cache::has($repository->cacheKeyForUserClient($user->id, $client->id)));
+        $this->assertFalse($repository->cacheStore()->has($repository->cacheKeyForClient($client->id)));
+        $this->assertFalse($repository->cacheStore()->has($repository->cacheKeyForUserClient($user->id, $client->id)));
 
-        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client2->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForClient($client2->id)));
     }
 
     public function test_it_can_cache_personal_client()
@@ -155,7 +155,7 @@ class FeatureTest extends TestCase
             $repository->personalAccessClient();
             $repository->personalAccessClient();
         });
-        $this->assertTrue(Cache::has($repository->cacheKeyForClient($client->id)));
+        $this->assertTrue($repository->cacheStore()->has($repository->cacheKeyForClient($client->id)));
 
         $this->assertSame('select * from "oauth_clients" where "id" = ? limit 1', $query[0]['sql']);
         $this->assertSame($client->getKey(), $query[0]['bindings'][0]);
@@ -163,7 +163,7 @@ class FeatureTest extends TestCase
 
         // on updated
         $repository->update($client, 'Personal Token Client 2', 'http://localhost');
-        $this->assertFalse(Cache::has($repository->cacheKeyForClient($client->id)));
+        $this->assertFalse($repository->cacheStore()->has($repository->cacheKeyForClient($client->id)));
     }
 
     protected function getQueryLog(\Closure $callback): \Illuminate\Support\Collection

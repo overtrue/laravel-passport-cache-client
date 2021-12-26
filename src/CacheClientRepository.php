@@ -93,7 +93,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function find($id)
     {
-        return $this->store()->remember(
+        return $this->cacheStore()->remember(
             $this->cacheKeyForClient($id),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($id) {
@@ -114,7 +114,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function findForUser($clientId, $userId)
     {
-        return $this->store()->remember(
+        return $this->cacheStore()->remember(
             $this->cacheKeyForUserClient($userId, $clientId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($clientId, $userId) {
@@ -134,7 +134,7 @@ class CacheClientRepository extends ClientRepository
      */
     public function forUser($userId): Collection
     {
-        return $this->store()->remember(
+        return $this->cacheStore()->remember(
             $this->cacheKeyForUser($userId),
             \now()->addSeconds($this->expiresInSeconds),
             function () use ($userId) {
@@ -195,7 +195,7 @@ class CacheClientRepository extends ClientRepository
             $keys[] = $this->cacheKeyForClient($this->personalAccessClientId);
         }
 
-        $this->store()->deleteMultiple($keys);
+        $this->cacheStore()->deleteMultiple($keys);
     }
 
     public function cacheKeyForUser($userId): string
@@ -213,10 +213,10 @@ class CacheClientRepository extends ClientRepository
         return $this->cacheKeyPrefix .':for_user_client:'. $userId . '_' . $clientId;
     }
 
-    public function store(): Repository
+    public function cacheStore(): Repository
     {
         $store = Cache::store($this->cacheStore);
 
-        return $store instanceof TaggableStore ? $store->tags($this->cacheTags) : $store;
+        return $store->getStore() instanceof TaggableStore ? $store->tags($this->cacheTags) : $store;
     }
 }
