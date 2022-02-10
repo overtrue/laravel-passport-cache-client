@@ -3,7 +3,6 @@
 namespace Tests;
 
 use Illuminate\Contracts\Hashing\Hasher;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
